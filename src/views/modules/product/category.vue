@@ -1,7 +1,13 @@
 <template>
   <div>
+    <el-switch
+        v-model="draggable"
+        active-text="开启拖拽"
+        inactive-text="关闭拖拽">
+    </el-switch>
+    <el-button v-show="draggable" @click="batchSave">批量保存</el-button>
     <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" :expand-on-click-node="false"
-             :default-expanded-keys="expandedKey" draggable :allow-drop="allowDrop" @node-drop="handleDrop">
+             :default-expanded-keys="expandedKey" :draggable="draggable" :allow-drop="allowDrop" @node-drop="handleDrop">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -58,8 +64,10 @@
 export default {
   data () {
     return {
-      title: null,
+      draggable: false,
+      pCid: [],
       updateNodes: [],
+      title: null,
       category: {
         catId: null,
         name: null,
@@ -191,7 +199,7 @@ export default {
       console.log('allowDrop', draggingNode, dropNode, type)
 
       // 当前正在拖动的节点+父节点所在的深度不大于3即可
-      const level = this.countNodeLevel(draggingNode.data) - draggingNode.data.catLevel
+      const level = Math.abs(this.countNodeLevel(draggingNode) - draggingNode.level) + 1
 
       if (type === 'inner') {
         return level + dropNode.level <= 3
@@ -199,10 +207,10 @@ export default {
       return level + dropNode.parent.level <= 3
     },
     countNodeLevel (node) {
-      let maxLevel = node.catLevel
+      let maxLevel = node.level
       // 找到所有子节点，求出最大深度
-      for (const child of node.children) {
-        maxLevel = Math.max(child.catLevel, this.countNodeLevel(child))
+      for (const childNode of node.childNodes) {
+        maxLevel = Math.max(childNode.level, this.countNodeLevel(childNode))
       }
       return maxLevel
     },
@@ -218,6 +226,7 @@ export default {
         pCid = dropNode.parent.data.catId === undefined ? 0 : dropNode.parent.data.catId
         siblings = dropNode.parent.childNodes
       }
+      this.pCid.push(pCid)
 
       // 2、当前拖拽节点的最新顺序
       for (let i = 0; i < siblings.length; i++) {
@@ -239,6 +248,18 @@ export default {
 
       // 3、当前拖拽节点的最新层级
       console.log(this.updateNodes)
+    },
+    updateChildNodeLevel (node) {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        const cNode = node.childNodes[i].data
+        this.updateNodes.push({
+          catId: cNode.catId,
+          catLevel: node.childNodes[i].level
+        })
+        this.updateChildNodeLevel(node.childNodes[i])
+      }
+    },
+    batchSave () {
       this.$http({
         url: this.$http.adornUrl('/product/category/update/sort'),
         method: 'post',
@@ -251,19 +272,9 @@ export default {
         // 刷新菜单
         this.getMenus()
         // 设置需要默认展开的菜单
-        this.expandedKey = [pCid]
+        this.expandedKey = this.pCid
         this.updateNodes = []
       })
-    },
-    updateChildNodeLevel (node) {
-      for (let i = 0; i < node.childNodes.length; i++) {
-        const cNode = node.childNodes[i].data
-        this.updateNodes.push({
-          catId: cNode.catId,
-          catLevel: node.childNodes[i].level
-        })
-        this.updateChildNodeLevel(node.childNodes[i])
-      }
     }
   },
   created () {
