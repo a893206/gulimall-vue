@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" :expand-on-click-node="false"
-             :default-expanded-keys="expandedKey" draggable :allow-drop="allowDrop">
+             :default-expanded-keys="expandedKey" draggable :allow-drop="allowDrop" @node-drop="handleDrop">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -58,7 +58,8 @@
 export default {
   data () {
     return {
-      title: '',
+      title: null,
+      updateNodes: [],
       category: {
         catId: null,
         name: null,
@@ -130,7 +131,7 @@ export default {
           url: this.$http.adornUrl('/product/category/save'),
           method: 'post',
           data: this.$http.adornData(this.category, false)
-        }).then(({data}) => {
+        }).then(() => {
           this.$message.success('添加成功')
           this.getMenus()
           this.expandedKey = [this.category.parentCid]
@@ -141,7 +142,7 @@ export default {
           url: this.$http.adornUrl('/product/category/update'),
           method: 'post',
           data: this.$http.adornData(this.category, false)
-        }).then(({data}) => {
+        }).then(() => {
           this.$message.success('修改成功')
           this.getMenus()
           this.expandedKey = [this.category.parentCid]
@@ -162,7 +163,7 @@ export default {
           url: this.$http.adornUrl('/product/category/delete'),
           method: 'post',
           data: this.$http.adornData(catIds, false)
-        }).then(({data}) => {
+        }).then(() => {
           this.$message({
             type: 'success',
             message: '菜单删除成功'
@@ -200,6 +201,50 @@ export default {
         maxLevel = Math.max(child.catLevel, this.countNodeLevel(child))
       }
       return maxLevel
+    },
+    handleDrop (draggingNode, dropNode, dropType, ev) {
+      console.log('handleDrop', draggingNode, dropNode, dropType)
+      // 1、当前节点最新的父节点id
+      let pCid = 0
+      let siblings = []
+      if (dropType === 'inner') {
+        pCid = dropNode.data.catId
+        siblings = dropNode.childNodes
+      } else {
+        pCid = dropNode.parent.data.catId === undefined ? 0 : dropNode.parent.data.catId
+        siblings = dropNode.parent.childNodes
+      }
+
+      // 2、当前拖拽节点的最新顺序
+      for (let i = 0; i < siblings.length; i++) {
+        const sibling = siblings[i]
+        // 如果遍历的是当前正在拖拽的节点
+        if (sibling.data.catId === draggingNode.data.catId) {
+          // 当前节点的层级发生变化
+          let catLevel = draggingNode.data.level
+          if (sibling.level !== catLevel) {
+            catLevel = dropNode.level
+            // 修改子节点的层级
+            this.updateChildNodeLevel(sibling)
+          }
+          this.updateNodes.push({catId: sibling.data.catId, sort: i, parentCid: pCid, catLevel})
+        } else {
+          this.updateNodes.push({catId: sibling.data.catId, sort: i})
+        }
+      }
+      console.log(this.updateNodes)
+
+      // 3、当前拖拽节点的最新层级
+    },
+    updateChildNodeLevel (node) {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        const cNode = node.childNodes[i].data
+        this.updateNodes.push({
+          catId: cNode.catId,
+          catLevel: node.childNodes[i].level
+        })
+        this.updateChildNodeLevel(node.childNodes[i])
+      }
     }
   },
   created () {
