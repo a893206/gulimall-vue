@@ -133,7 +133,9 @@ export default {
           data: this.$http.adornData(this.category, false)
         }).then(() => {
           this.$message.success('添加成功')
+          // 刷新菜单
           this.getMenus()
+          // 设置需要默认展开的菜单
           this.expandedKey = [this.category.parentCid]
           this.dialogVisible = false
         })
@@ -144,7 +146,9 @@ export default {
           data: this.$http.adornData(this.category, false)
         }).then(() => {
           this.$message.success('修改成功')
+          // 刷新菜单
           this.getMenus()
+          // 设置需要默认展开的菜单
           this.expandedKey = [this.category.parentCid]
           this.dialogVisible = false
         })
@@ -187,7 +191,7 @@ export default {
       console.log('allowDrop', draggingNode, dropNode, type)
 
       // 当前正在拖动的节点+父节点所在的深度不大于3即可
-      const level = this.countNodeLevel(draggingNode.data) - draggingNode.data.catLevel + 1
+      const level = this.countNodeLevel(draggingNode.data) - draggingNode.data.catLevel
 
       if (type === 'inner') {
         return level + dropNode.level <= 3
@@ -232,9 +236,24 @@ export default {
           this.updateNodes.push({catId: sibling.data.catId, sort: i})
         }
       }
-      console.log(this.updateNodes)
 
       // 3、当前拖拽节点的最新层级
+      console.log(this.updateNodes)
+      this.$http({
+        url: this.$http.adornUrl('/product/category/update/sort'),
+        method: 'post',
+        data: this.$http.adornData(this.updateNodes, false)
+      }).then(({ data }) => {
+        this.$message({
+          type: 'success',
+          message: '菜单顺序等修改成功'
+        })
+        // 刷新菜单
+        this.getMenus()
+        // 设置需要默认展开的菜单
+        this.expandedKey = [pCid]
+        this.updateNodes = []
+      })
     },
     updateChildNodeLevel (node) {
       for (let i = 0; i < node.childNodes.length; i++) {
