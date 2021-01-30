@@ -1,5 +1,7 @@
 <template>
-  <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" @node-click="handleNodeClick" :expand-on-click-node="false" :default-expanded-keys="expandedKey">
+  <div>
+    <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" @node-click="handleNodeClick"
+             :expand-on-click-node="false" :default-expanded-keys="expandedKey">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -19,13 +21,37 @@
           </el-button>
         </span>
       </span>
-  </el-tree>
+    </el-tree>
+
+    <el-dialog
+        title="提示"
+        :visible.sync="dialogVisible"
+        width="30%">
+      <el-form :model="category">
+        <el-form-item label="分类名称">
+          <el-input v-model="category.name" autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addCategory">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
 </template>
 
 <script>
 export default {
   data () {
     return {
+      category: {
+        name: '',
+        parentCid: 0,
+        catLevel: 0,
+        showStatus: 1,
+        sort: 0
+      },
+      dialogVisible: false,
       menus: [],
       expandedKey: [],
       defaultProps: {
@@ -50,6 +76,32 @@ export default {
     },
     append (data) {
       console.log('append', data)
+
+      this.category.parentCid = data.catId
+      this.category.catLevel = data.catLevel * 1 + 1
+
+      this.dialogVisible = true
+    },
+    // 添加三级分类
+    addCategory () {
+      console.log('提交的三级分类数据', this.category)
+
+      this.$http({
+        url: this.$http.adornUrl('/product/category/save'),
+        method: 'post',
+        data: this.$http.adornData(this.category, false)
+      }).then(({ data }) => {
+        this.$message({
+          type: 'success',
+          message: '菜单保存成功'
+        })
+        // 关闭对话框
+        this.dialogVisible = false
+        // 刷新菜单
+        this.getMenus()
+        // 设置需要默认展开的菜单
+        this.expandedKey = [this.category.parentCid]
+      })
     },
     remove (node, data) {
       console.log('remove', node, data)
@@ -65,10 +117,9 @@ export default {
           method: 'post',
           data: this.$http.adornData(catIds, false)
         }).then(({ data }) => {
-          console.log('删除成功')
           this.$message({
             type: 'success',
-            message: '删除成功!'
+            message: '菜单删除成功'
           })
           // 刷新菜单
           this.getMenus()
