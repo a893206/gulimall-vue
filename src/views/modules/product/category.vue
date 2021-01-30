@@ -1,7 +1,7 @@
 <template>
   <div>
-    <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" @node-click="handleNodeClick"
-             :expand-on-click-node="false" :default-expanded-keys="expandedKey">
+    <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" :expand-on-click-node="false"
+             :default-expanded-keys="expandedKey">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -11,6 +11,13 @@
               size="mini"
               @click="() => append(data)">
             Append
+          </el-button>
+          <el-button
+              v-if="node.level <= 2"
+              type="text"
+              size="mini"
+              @click="() => edit(data)">
+            Edit
           </el-button>
           <el-button
               v-if="node.childNodes.length === 0"
@@ -24,17 +31,24 @@
     </el-tree>
 
     <el-dialog
-        title="提示"
+        :title="title"
         :visible.sync="dialogVisible"
+        :close-on-click-modal="false"
         width="30%">
       <el-form :model="category">
         <el-form-item label="分类名称">
           <el-input v-model="category.name" autocomplete="off"></el-input>
         </el-form-item>
+        <el-form-item label="图标">
+          <el-input v-model="category.icon" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="计量单位">
+          <el-input v-model="category.productUnit" autocomplete="off"></el-input>
+        </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addCategory">确 定</el-button>
+        <el-button type="primary" @click="submitData">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -44,12 +58,17 @@
 export default {
   data () {
     return {
+      title: '',
       category: {
-        name: '',
-        parentCid: 0,
-        catLevel: 0,
-        showStatus: 1,
-        sort: 0
+        catId: null,
+        name: null,
+        parentCid: null,
+        catLevel: null,
+        showStatus: null,
+        sort: null,
+        icon: null,
+        productUnit: null,
+        productCount: null
       },
       dialogVisible: false,
       menus: [],
@@ -61,9 +80,6 @@ export default {
     }
   },
   methods: {
-    handleNodeClick (data) {
-      console.log(data)
-    },
     getMenus () {
       this.$http({
         url: this.$http.adornUrl('/product/category/list/tree'),
@@ -75,33 +91,63 @@ export default {
       })
     },
     append (data) {
+      this.title = '添加分类'
       console.log('append', data)
 
-      this.category.parentCid = data.catId
-      this.category.catLevel = data.catLevel * 1 + 1
+      this.category = {
+        catId: null,
+        name: null,
+        parentCid: data.catId,
+        catLevel: data.catLevel * 1 + 1,
+        showStatus: 1,
+        sort: 0,
+        icon: null,
+        productUnit: null,
+        productCount: 0
+      }
 
       this.dialogVisible = true
     },
-    // 添加三级分类
-    addCategory () {
-      console.log('提交的三级分类数据', this.category)
+    edit (data) {
+      this.title = '修改分类'
+      console.log('edit', data)
 
       this.$http({
-        url: this.$http.adornUrl('/product/category/save'),
-        method: 'post',
-        data: this.$http.adornData(this.category, false)
-      }).then(({ data }) => {
-        this.$message({
-          type: 'success',
-          message: '菜单保存成功'
-        })
-        // 关闭对话框
-        this.dialogVisible = false
-        // 刷新菜单
-        this.getMenus()
-        // 设置需要默认展开的菜单
-        this.expandedKey = [this.category.parentCid]
+        url: this.$http.adornUrl('/product/category/info/' + data.catId),
+        method: 'get',
+        params: this.$http.adornParams({})
+      }).then(({data}) => {
+        this.category = data.category
       })
+
+      this.dialogVisible = true
+    },
+    submitData () {
+      console.log(this.category)
+
+      if (this.category.catId == null) {
+        this.$http({
+          url: this.$http.adornUrl('/product/category/save'),
+          method: 'post',
+          data: this.$http.adornData(this.category, false)
+        }).then(({data}) => {
+          this.$message.success('添加成功')
+          this.getMenus()
+          this.expandedKey = [this.category.parentCid]
+          this.dialogVisible = false
+        })
+      } else {
+        this.$http({
+          url: this.$http.adornUrl('/product/category/update'),
+          method: 'post',
+          data: this.$http.adornData(this.category, false)
+        }).then(({data}) => {
+          this.$message.success('修改成功')
+          this.getMenus()
+          this.expandedKey = [this.category.parentCid]
+          this.dialogVisible = false
+        })
+      }
     },
     remove (node, data) {
       console.log('remove', node, data)
@@ -116,7 +162,7 @@ export default {
           url: this.$http.adornUrl('/product/category/delete'),
           method: 'post',
           data: this.$http.adornData(catIds, false)
-        }).then(({ data }) => {
+        }).then(({data}) => {
           this.$message({
             type: 'success',
             message: '菜单删除成功'
