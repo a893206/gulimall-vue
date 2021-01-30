@@ -6,8 +6,9 @@
         inactive-text="关闭拖拽">
     </el-switch>
     <el-button v-show="draggable" @click="batchSave">批量保存</el-button>
+    <el-button type="danger" @click="batchDelete">批量删除</el-button>
     <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" :expand-on-click-node="false"
-             :default-expanded-keys="expandedKey" :draggable="draggable" :allow-drop="allowDrop" @node-drop="handleDrop">
+             :default-expanded-keys="expandedKey" :draggable="draggable" :allow-drop="allowDrop" @node-drop="handleDrop" ref="menuTree">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -274,6 +275,37 @@ export default {
         // 设置需要默认展开的菜单
         this.expandedKey = this.pCid
         this.updateNodes = []
+      })
+    },
+    batchDelete () {
+      const catIds = []
+      const checkedNodes = this.$refs.menuTree.getCheckedNodes()
+      console.log('被选中的元素', checkedNodes)
+      for (const checkedNode of checkedNodes) {
+        catIds.push(checkedNode.catId)
+      }
+
+      this.$http({
+        url: this.$http.adornUrl('/product/category/delete'),
+        method: 'post',
+        data: this.$http.adornData(catIds, false)
+      }).then(() => {
+        this.$confirm(`是否批量删除【${catIds}】菜单?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.$message({
+            type: 'success',
+            message: '菜单批量删除成功!'
+          })
+          this.getMenus()
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
+        })
       })
     }
   },
