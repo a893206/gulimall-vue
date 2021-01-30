@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-tree :data="menus" show-checkbox node-key="catId" :props="defaultProps" :expand-on-click-node="false"
-             :default-expanded-keys="expandedKey">
+             :default-expanded-keys="expandedKey" draggable :allow-drop="allowDrop">
     <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -178,6 +178,28 @@ export default {
           message: '已取消删除'
         })
       })
+    },
+    allowDrop (draggingNode, dropNode, type) {
+      // 1、被拖动的当前节点及所在的父节点总层数不能大于3
+
+      // 1）、被拖动的当前节点总层数
+      console.log('allowDrop', draggingNode, dropNode, type)
+
+      // 当前正在拖动的节点+父节点所在的深度不大于3即可
+      const level = this.countNodeLevel(draggingNode.data) - draggingNode.data.catLevel + 1
+
+      if (type === 'inner') {
+        return level + dropNode.level <= 3
+      }
+      return level + dropNode.parent.level <= 3
+    },
+    countNodeLevel (node) {
+      let maxLevel = node.catLevel
+      // 找到所有子节点，求出最大深度
+      for (const child of node.children) {
+        maxLevel = Math.max(child.catLevel, this.countNodeLevel(child))
+      }
+      return maxLevel
     }
   },
   created () {
