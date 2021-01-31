@@ -112,6 +112,7 @@ export default {
   props: {},
   data () {
     return {
+      catId: 0,
       dataForm: {
         key: ''
       },
@@ -132,12 +133,17 @@ export default {
     treeNodeClick (data, node, component) {
       console.log('arrtgroup感知到category的节点被点击：', data, node, component)
       console.log('刚才被点击的菜单id：', data.catId)
+      if (node.level === 3) {
+        this.catId = data.catId
+        // 获取数据列表
+        this.getDataList()
+      }
     },
     // 获取数据列表
     getDataList () {
       this.dataListLoading = true
       this.$http({
-        url: this.$http.adornUrl('/product/attrgroup/list'),
+        url: this.$http.adornUrl(`/product/attrgroup/list/${this.catId}`),
         method: 'get',
         params: this.$http.adornParams({
           'page': this.pageIndex,
