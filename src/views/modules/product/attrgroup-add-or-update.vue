@@ -2,7 +2,8 @@
   <el-dialog
     :title="!dataForm.id ? '新增' : '修改'"
     :close-on-click-modal="false"
-    :visible.sync="visible">
+    :visible.sync="visible"
+    @closed="dialogClose">
     <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
     <el-form-item label="组名" prop="attrGroupName">
       <el-input v-model="dataForm.attrGroupName" placeholder="组名"></el-input>
@@ -19,9 +20,12 @@
     <el-form-item label="所属分类id" prop="catalogId">
 <!--      <el-input v-model="dataForm.catalogId" placeholder="所属分类id"></el-input>-->
       <el-cascader
-        v-model="dataForm.catalogIds"
+        filterable
+        placeholder="试试搜索：手机"
+        v-model="dataForm.catalogPath"
         :options="categories"
-        :props="props"></el-cascader>
+        :props="props">
+      </el-cascader>
     </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -49,7 +53,7 @@
           descript: '',
           icon: '',
           catalogId: 0,
-          catalogIds: []
+          catalogPath: []
         },
         dataRule: {
           attrGroupName: [
@@ -96,6 +100,8 @@
                 this.dataForm.descript = data.attrGroup.descript
                 this.dataForm.icon = data.attrGroup.icon
                 this.dataForm.catalogId = data.attrGroup.catalogId
+                // 查出catalogId的完整路径
+                this.dataForm.catalogPath = data.attrGroup.catalogPath
               }
             })
           }
@@ -114,7 +120,7 @@
                 'sort': this.dataForm.sort,
                 'descript': this.dataForm.descript,
                 'icon': this.dataForm.icon,
-                'catalogId': this.dataForm.catalogIds.slice(-1)[0]
+                'catalogId': this.dataForm.catalogPath.slice(-1)[0]
               })
             }).then(({data}) => {
               if (data && data.code === 0) {
@@ -133,6 +139,9 @@
             })
           }
         })
+      },
+      dialogClose () {
+        this.dataForm.catalogPath = []
       }
     },
     created () {
