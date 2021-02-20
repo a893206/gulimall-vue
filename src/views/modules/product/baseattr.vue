@@ -154,7 +154,7 @@ export default {
   methods: {
     // 感知树节点被点击
     treenodeclick (data, node, component) {
-      if (node.level == 3) {
+      if (node.level === 3) {
         this.catId = data.catId
         this.getDataList() // 重新查询
       }
@@ -166,7 +166,7 @@ export default {
     // 获取数据列表
     getDataList () {
       this.dataListLoading = true
-      let type = this.attrtype == 0 ? 'sale' : 'base'
+      let type = this.attrtype === 0 ? 'sale' : 'base'
       this.$http({
         url: this.$http.adornUrl(`/product/attr/${type}/list/${this.catId}`),
         method: 'get',
