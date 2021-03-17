@@ -48,8 +48,8 @@
                 <template slot="prepend">成长值</template>
               </el-input-number>
             </el-form-item>
-            <el-form-item label="商品介绍" prop="decript">
-              <multi-upload v-model="spu.decript"></multi-upload>
+            <el-form-item label="商品介绍" prop="descript">
+              <multi-upload v-model="spu.descript"></multi-upload>
             </el-form-item>
 
             <el-form-item label="商品图集" prop="images">
@@ -369,7 +369,7 @@ export default {
         brandId: '',
         weight: '',
         publishStatus: 0,
-        decript: [], // 商品详情
+        descript: [], // 商品详情
         images: [], // 商品图集，最后sku也可以新增
         bounds: {
           // 积分
@@ -392,7 +392,7 @@ export default {
         brandId: [
           { required: true, message: '请选择一个品牌', trigger: 'blur' }
         ],
-        decript: [
+        descript: [
           { required: true, message: '请上传商品详情图集', trigger: 'blur' }
         ],
         images: [
@@ -458,7 +458,7 @@ export default {
         brandId: '',
         weight: '',
         publishStatus: 0,
-        decript: [],
+        descript: [],
         images: [],
         bounds: {
           buyBounds: 0,
@@ -609,7 +609,7 @@ export default {
             skuTitle: this.spu.spuName + ' ' + descar.join(' '),
             skuSubtitle: '',
             images: imgs,
-            descar: descar,
+            descartes: descar,
             fullCount: 0,
             discount: 0,
             countStatus: 0,
